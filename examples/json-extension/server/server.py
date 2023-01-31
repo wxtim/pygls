@@ -1,21 +1,6 @@
-############################################################################
-# Copyright(c) Open Law Library. All rights reserved.                      #
-# See ThirdPartyNotices.txt in the project root for additional notices.    #
-#                                                                          #
-# Licensed under the Apache License, Version 2.0 (the "License")           #
-# you may not use this file except in compliance with the License.         #
-# You may obtain a copy of the License at                                  #
-#                                                                          #
-#     http: // www.apache.org/licenses/LICENSE-2.0                         #
-#                                                                          #
-# Unless required by applicable law or agreed to in writing, software      #
-# distributed under the License is distributed on an "AS IS" BASIS,        #
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. #
-# See the License for the specific language governing permissions and      #
-# limitations under the License.                                           #
-############################################################################
 from pathlib import Path
 from typing import Optional
+import uuid
 
 from cylc.flow.cfgspec.workflow import SPEC
 from cylc.flow.scripts.lint import check_cylc_file, parse_checks
@@ -152,66 +137,6 @@ async def did_open(ls, params: DidOpenTextDocumentParams):
     await _validate(ls, params)
 
 
-# @cylc_ls.feature(
-#     TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL,
-#     SemanticTokensLegend(
-#         token_types = ["operator"],
-#         token_modifiers = []
-#     )
-# )
-# def semantic_tokens(ls: CylcLanguageServer, params: SemanticTokensParams):
-#     """See https://microsoft.github.io/language-server-protocol/specification#textDocument_semanticTokens
-#     for details on how semantic tokens are encoded."""
-
-#     TOKENS = re.compile('".*"(?=:)')
-
-#     uri = params.text_document.uri
-#     doc = ls.workspace.get_document(uri)
-
-#     last_line = 0
-#     last_start = 0
-
-#     data = []
-
-#     for lineno, line in enumerate(doc.lines):
-#         last_start = 0
-
-#         for match in TOKENS.finditer(line):
-#             start, end = match.span()
-#             data += [
-#                 (lineno - last_line),
-#                 (start - last_start),
-#                 (end - start),
-#                 0,
-#                 0
-#             ]
-
-#             last_line = lineno
-#             last_start = start
-
-#     return SemanticTokens(data=data)
-
-
-
-# @cylc_ls.command(CylcLanguageServer.CMD_PROGRESS)
-# async def progress(ls: CylcLanguageServer, *args):
-#     """Create and start the progress on the client."""
-#     token = str(uuid.uuid4())
-#     # Create
-#     await ls.progress.create_async(token)
-#     # Begin
-#     ls.progress.begin(token, WorkDoneProgressBegin(title='Indexing', percentage=0))
-#     # Report
-#     for i in range(1, 10):
-#         ls.progress.report(
-#             token,
-#             WorkDoneProgressReport(message=f'{i * 10}%', percentage= i * 10),
-#         )
-#         await asyncio.sleep(2)
-#     # End
-#     ls.progress.end(token, WorkDoneProgressEnd(message='Finished'))
-
-
 @cylc_ls.command(CylcLanguageServer.CMD_REGISTER_COMPLETIONS)
 async def register_completions(ls: CylcLanguageServer, *args):
     """Register completions method on the client."""
@@ -291,15 +216,15 @@ async def register_completions(ls: CylcLanguageServer, *args):
 #         ls.show_message_log(f'Error ocurred: {e}')
 
 
-# @cylc_ls.command(CylcLanguageServer.CMD_UNREGISTER_COMPLETIONS)
-# async def unregister_completions(ls: CylcLanguageServer, *args):
-#     """Unregister completions method on the client."""
-#     params = UnregistrationParams(unregisterations=[
-#         Unregistration(id=str(uuid.uuid4()), method=TEXT_DOCUMENT_COMPLETION)
-#     ])
-#     response = await ls.unregister_capability_async(params)
-#     if response is None:
-#         ls.show_message('Successfully unregistered completions method')
-#     else:
-#         ls.show_message('Error happened during completions unregistration.',
-#                         MessageType.Error)
+@cylc_ls.command(CylcLanguageServer.CMD_UNREGISTER_COMPLETIONS)
+async def unregister_completions(ls: CylcLanguageServer, *args):
+    """Unregister completions method on the client."""
+    params = UnregistrationParams(unregisterations=[
+        Unregistration(id=str(uuid.uuid4()), method=TEXT_DOCUMENT_COMPLETION)
+    ])
+    response = await ls.unregister_capability_async(params)
+    if response is None:
+        ls.show_message('Successfully unregistered completions method')
+    else:
+        ls.show_message('Error happened during completions unregistration.',
+                        MessageType.Error)
