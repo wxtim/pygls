@@ -1,5 +1,5 @@
 {
-  "name": "json-extension",
+  "name": "cylcls",
   "description": "Simple json extension example",
   "author": "Open Law Library",
   "repository": "https://github.com/openlawlibrary/pygls",
@@ -13,7 +13,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:json"
+    "onLanguage:cylc"
   ],
   "contributes": {
     "commands": [
