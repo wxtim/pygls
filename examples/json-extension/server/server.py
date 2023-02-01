@@ -33,8 +33,6 @@ class CylcLanguageServer(LanguageServer):
     CMD_COUNT_DOWN_NON_BLOCKING = 'countDownNonBlocking'
     CMD_PROGRESS = 'progress'
     CMD_REGISTER_COMPLETIONS = 'registerCompletions'
-    CMD_SHOW_CONFIGURATION_ASYNC = 'showConfigurationAsync'
-    CMD_SHOW_CONFIGURATION_CALLBACK = 'showConfigurationCallback'
     CMD_SHOW_CONFIGURATION_THREAD = 'showConfigurationThread'
     CMD_UNREGISTER_COMPLETIONS = 'unregisterCompletions'
 
@@ -114,7 +112,6 @@ def completions(params: Optional[CompletionParams] = None) -> CompletionList:
 
 
 @cylc_ls.feature(TEXT_DOCUMENT_DID_CHANGE)
-# @cylc_ls.command(CylcLanguageServer.CMD_COUNT_DOWN_NON_BLOCKING)
 async def did_change(ls, params: DidChangeTextDocumentParams):
     """Text document did change notification."""
     await _validate(ls, params)
@@ -152,68 +149,6 @@ async def register_completions(ls: CylcLanguageServer, *args):
     else:
         ls.show_message('Error happened during completions registration.',
                         MessageType.Error)
-
-
-# @cylc_ls.command(CylcLanguageServer.CMD_SHOW_CONFIGURATION_ASYNC)
-# async def show_configuration_async(ls: CylcLanguageServer, *args):
-#     """Gets exampleConfiguration from the client settings using coroutines."""
-#     try:
-#         config = await ls.get_configuration_async(
-#             WorkspaceConfigurationParams(items=[
-#                 ConfigurationItem(
-#                     scope_uri='',
-#                     section=CylcLanguageServer.CONFIGURATION_SECTION)
-#         ]))
-
-#         example_config = config[0].get('exampleConfiguration')
-
-#         ls.show_message(f'jsonServer.exampleConfiguration value: {example_config}')
-
-#     except Exception as e:
-#         ls.show_message_log(f'Error ocurred: {e}')
-
-
-# @cylc_ls.command(CylcLanguageServer.CMD_SHOW_CONFIGURATION_CALLBACK)
-# def show_configuration_callback(ls: CylcLanguageServer, *args):
-#     """Gets exampleConfiguration from the client settings using callback."""
-#     def _config_callback(config):
-#         try:
-#             example_config = config[0].get('exampleConfiguration')
-
-#             ls.show_message(f'jsonServer.exampleConfiguration value: {example_config}')
-
-#         except Exception as e:
-#             ls.show_message_log(f'Error ocurred: {e}')
-
-#     ls.get_configuration(
-#         WorkspaceConfigurationParams(
-#             items=[
-#                 ConfigurationItem(
-#                     scope_uri='',
-#                     section=CylcLanguageServer.CONFIGURATION_SECTION)
-#             ]
-#         ),
-#         _config_callback
-#     )
-
-
-# @cylc_ls.thread()
-# @cylc_ls.command(CylcLanguageServer.CMD_SHOW_CONFIGURATION_THREAD)
-# def show_configuration_thread(ls: CylcLanguageServer, *args):
-#     """Gets exampleConfiguration from the client settings using thread pool."""
-#     try:
-#         config = ls.get_configuration(WorkspaceConfigurationParams(items=[
-#             ConfigurationItem(
-#                 scope_uri='',
-#                 section=CylcLanguageServer.CONFIGURATION_SECTION)
-#         ])).result(2)
-
-#         example_config = config[0].get('exampleConfiguration')
-
-#         ls.show_message(f'jsonServer.exampleConfiguration value: {example_config}')
-
-#     except Exception as e:
-#         ls.show_message_log(f'Error ocurred: {e}')
 
 
 @cylc_ls.command(CylcLanguageServer.CMD_UNREGISTER_COMPLETIONS)
