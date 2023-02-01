@@ -14,37 +14,30 @@
 # See the License for the specific language governing permissions and      #
 # limitations under the License.                                           #
 ############################################################################
-import asyncio
 import io
-import json
-import threading
-import time
 
 import pytest
 from mock import Mock
 from lsprotocol.types import (DidCloseTextDocumentParams,
                               DidOpenTextDocumentParams, TextDocumentIdentifier,
-                              WorkspaceConfigurationResponse,
                               TextDocumentItem)
 from pygls.server import StdOutTransportAdapter
 from pygls.workspace import Document, Workspace
 
 from ...server import (
-    JsonLanguageServer,
+    CylcLanguageServer,
     completions,
     did_close,
     did_open,
-    show_configuration_async,
-    show_configuration_callback,
-    show_configuration_thread,
 )
 
-fake_document_uri = 'file://fake_doc.txt'
-fake_document_content = 'text'
+
+fake_document_uri = 'file://flow.cylc'
+fake_document_content = '    [meta]'
 fake_document = Document(fake_document_uri, fake_document_content)
 
 
-server = JsonLanguageServer('test-json-server', 'v1')
+server = CylcLanguageServer('test-cylc-server', 'v1')
 server.publish_diagnostics = Mock()
 server.show_message = Mock()
 server.show_message_log = Mock()
@@ -71,8 +64,6 @@ def test_completions():
     assert '"' in labels
     assert '[' in labels
     assert ']' in labels
-    assert '{' in labels
-    assert '}' in labels
 
 
 def test_did_close():
@@ -91,17 +82,9 @@ def test_did_close():
 async def test_did_open():
     _reset_mocks()
 
-    expected_msg = None
-
-    # Get expected error message
-    try:
-        json.loads(fake_document_content)
-    except json.JSONDecodeError as err:
-        expected_msg = err.msg
-
     params = DidOpenTextDocumentParams(
         text_document=TextDocumentItem(uri=fake_document_uri,
-                                       language_id='json',
+                                       language_id='cylc',
                                        version=1,
                                        text=fake_document_content))
 
@@ -111,95 +94,11 @@ async def test_did_open():
     server.publish_diagnostics.assert_called_once()
 
     # Check publish diagnostics args message
-    args = server.publish_diagnostics.call_args
-    assert args[0][1][0].message is expected_msg
+    assert (
+        'Top level section'
+        in server.publish_diagnostics.call_args.args[1][0].message
+    )
 
     # Check other methods are called
     server.show_message.assert_called_once()
     server.show_message_log.assert_called_once()
-
-
-def test_show_configuration_callback():
-    stdout = io.StringIO()
-    _reset_mocks(stdout=stdout)
-
-    show_configuration_callback(server)
-
-    # Grab the request id
-    id_ = json.loads(stdout.getvalue())['id']
-
-    # Simulate the client response
-    server.lsp._procedure_handler(
-        WorkspaceConfigurationResponse(
-            id=id_,
-            result=[
-                {'exampleConfiguration': 'some_value'}
-            ]
-        )
-    )
-
-    server.show_message.assert_called_with(
-        f'jsonServer.exampleConfiguration value: some_value'
-    )
-
-
-@pytest.mark.asyncio
-async def test_show_configuration_async():
-    stdout = io.StringIO()
-    _reset_mocks(stdout=stdout)
-
-    async def send_response():
-        await asyncio.sleep(0.1)
-
-        # Grab the request id
-        id_ = json.loads(stdout.getvalue())['id']
-
-        # Simulate the client response
-        server.lsp._procedure_handler(
-            WorkspaceConfigurationResponse(
-                id=id_,
-                result=[
-                    {"exampleConfiguration": "some_value"}
-                ]
-            )
-        )
-
-    await asyncio.gather(
-        show_configuration_async(server),
-        send_response()
-    )
-
-    server.show_message.assert_called_with(
-        f'jsonServer.exampleConfiguration value: some_value'
-    )
-
-
-def test_show_configuration_thread():
-    stdout = io.StringIO()
-    _reset_mocks(stdout=stdout)
-
-    thread = threading.Thread(
-        target=show_configuration_thread,
-        args=(server,),
-    )
-    thread.start()
-    time.sleep(1)
-
-    # Grab the request id
-    id_ = json.loads(stdout.getvalue())['id']
-
-    # Simulate the client response
-    server.lsp._procedure_handler(
-        WorkspaceConfigurationResponse(
-            id=id_,
-            result=[
-                {'exampleConfiguration': 'some_value'}
-            ]
-        )
-    )
-
-    thread.join()
-
-    server.show_message.assert_called_with(
-        f'jsonServer.exampleConfiguration value: some_value'
-    )
