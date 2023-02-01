@@ -36,7 +36,7 @@ function getClientOptions(): LanguageClientOptions {
             { scheme: "file", language: "cylc" },
             { scheme: "untitled", language: "cylc" },
         ],
-        outputChannelName: "[pygls] JsonLanguageServer",
+        outputChannelName: "[pygls] CylcLanguageServer",
         synchronize: {
             // Notify the server about file changes to '.clientrc files contain in the workspace
             fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
