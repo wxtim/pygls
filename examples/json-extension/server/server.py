@@ -9,21 +9,17 @@ from cylc.flow.scripts.validate import wrapped_main as cylc_validate, ValidateOp
 from lsprotocol.types import (
     TEXT_DOCUMENT_COMPLETION, TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_CLOSE, TEXT_DOCUMENT_DID_OPEN,
-    TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL
+    TEXT_DOCUMENT_DID_SAVE
 )
 from lsprotocol.types import (
     CompletionItem, CompletionList, CompletionOptions,
-    CompletionParams, ConfigurationItem,
+    CompletionParams,
     Diagnostic,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, MessageType, Position,
     Range, Registration, RegistrationParams,
-    SemanticTokens, SemanticTokensLegend, SemanticTokensParams,
     Unregistration, UnregistrationParams,
-    WorkDoneProgressBegin, WorkDoneProgressEnd,
-    WorkDoneProgressReport,
-    WorkspaceConfigurationParams
 )
 from pygls.server import LanguageServer
 
@@ -36,7 +32,7 @@ class CylcLanguageServer(LanguageServer):
     CMD_SHOW_CONFIGURATION_THREAD = 'showConfigurationThread'
     CMD_UNREGISTER_COMPLETIONS = 'unregisterCompletions'
 
-    CONFIGURATION_SECTION = 'jsonServer'
+    CONFIGURATION_SECTION = 'cylcServer'
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -51,7 +47,6 @@ async def _validate(ls, params):
     n.b: Cylc Validate will only return on issue at a time.
     """
     ls.show_message_log('Validating cylc...')
-
     text_doc = ls.workspace.get_document(params.text_document.uri)
     source = text_doc.source
 
@@ -73,7 +68,6 @@ async def _validate_cylc(text_doc):
     """
     docpath = str(Path(text_doc.split(':')[1]).parent)
     options = ValidateOptions()
-
     diagnostics = []
     try:
         await cylc_validate(options, docpath)
@@ -128,10 +122,12 @@ async def did_open(ls, params: DidOpenTextDocumentParams):
     """Text document did open notification."""
     ls.show_message(
         'Opened a Cylc Config\n'
-        'T[https://cylc.github.io/cylc-doc/stable/html/'
+        '[https://cylc.github.io/cylc-doc/stable/html/'
         'reference/config/workflow.html]'
     )
     await _validate(ls, params)
+
+# @cylc_ls.feature(TEXT_DOCUMENT_DID_CHANGE)
 
 
 @cylc_ls.command(CylcLanguageServer.CMD_REGISTER_COMPLETIONS)
