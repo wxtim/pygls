@@ -24,6 +24,14 @@
       {
         "command": "unregisterCompletions",
         "title": "Unregister completions"
+      },
+      {
+        "command": "cylcValidate",
+        "title": "cylc validate"
+      },
+      {
+        "command": "cylcLint",
+        "title": "cylc lint"
       }
     ],
     "configuration": {

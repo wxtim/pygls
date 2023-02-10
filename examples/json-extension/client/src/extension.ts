@@ -33,8 +33,9 @@ function getClientOptions(): LanguageClientOptions {
     return {
         // Register the server for plain text documents
         documentSelector: [
+            { scheme: "file", language: "cylc", pattern: "flow.cylc"},
             { scheme: "file", language: "cylc" },
-            { scheme: "untitled", language: "cylc" },
+            { scheme: "untitled", language: "cylc" }
         ],
         outputChannelName: "[pygls] CylcLanguageServer",
         synchronize: {

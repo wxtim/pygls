@@ -9,7 +9,7 @@ from cylc.flow.scripts.validate import wrapped_main as cylc_validate, ValidateOp
 from lsprotocol.types import (
     TEXT_DOCUMENT_COMPLETION, TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_CLOSE, TEXT_DOCUMENT_DID_OPEN,
-    TEXT_DOCUMENT_DID_SAVE
+    TEXT_DOCUMENT_DID_SAVE, TEXT_DOCUMENT_CODE_ACTION
 )
 from lsprotocol.types import (
     CompletionItem, CompletionList, CompletionOptions,
@@ -72,8 +72,11 @@ async def _validate_cylc(text_doc):
     try:
         await cylc_validate(options, docpath)
     except Exception as exc:
+        line = 0
+        if hasattr(exc, 'line_num'):
+            line = exc.line_num
         d = Diagnostic(
-            range=Range(Position(0, 0), Position(0, 10)),
+            range=Range(Position(line, 0), Position(line, 10)),
             message=str(exc),
             source='cylc validate'
         )
@@ -105,29 +108,78 @@ def completions(params: Optional[CompletionParams] = None) -> CompletionList:
     )
 
 
-@cylc_ls.feature(TEXT_DOCUMENT_DID_CHANGE)
-async def did_change(ls, params: DidChangeTextDocumentParams):
-    """Text document did change notification."""
-    await _validate(ls, params)
+# @cylc_ls.feature(TEXT_DOCUMENT_DID_CHANGE)
+# async def did_change(ls, params: DidChangeTextDocumentParams):
+#     """Text document did change notification."""
+#     await _validate(ls, params)
 
 
-@cylc_ls.feature(TEXT_DOCUMENT_DID_CLOSE)
-def did_close(server: CylcLanguageServer, params: DidCloseTextDocumentParams):
-    """Text document did close notification."""
-    server.show_message('Closed Cylc Config')
+# @cylc_ls.feature(TEXT_DOCUMENT_DID_CLOSE)
+# def did_close(server: CylcLanguageServer, params: DidCloseTextDocumentParams):
+#     """Text document did close notification."""
+#     server.show_message('Closed Cylc Config')
 
 
-@cylc_ls.feature(TEXT_DOCUMENT_DID_OPEN)
-async def did_open(ls, params: DidOpenTextDocumentParams):
-    """Text document did open notification."""
-    ls.show_message(
-        'Opened a Cylc Config\n'
-        '[https://cylc.github.io/cylc-doc/stable/html/'
-        'reference/config/workflow.html]'
-    )
-    await _validate(ls, params)
+# @cylc_ls.feature(TEXT_DOCUMENT_DID_OPEN)
+# async def did_open(ls, params: DidOpenTextDocumentParams):
+#     """Text document did open notification."""
+#     ls.show_message(
+#         'Opened a Cylc Config\n'
+#         '[https://cylc.github.io/cylc-doc/stable/html/'
+#         'reference/config/workflow.html]'
+#     )
+#     await _validate(ls, params)
 
 # @cylc_ls.feature(TEXT_DOCUMENT_DID_CHANGE)
+
+
+from lsprotocol.types import (
+    CodeAction,
+    CodeActionContext,
+    CodeActionKind,
+    CodeActionOptions,
+    CodeActionParams,
+    CodeActionDisabledType,
+    Command,
+    Diagnostic,
+    Position,
+    Range,
+    TextDocumentIdentifier,
+)
+
+
+@cylc_ls.feature(
+    TEXT_DOCUMENT_CODE_ACTION,
+    CodeActionOptions()
+)
+def my_action(ls, params: CodeActionParams):
+    breakpoint()
+    if params.text_document.uri.endswith('flow.cylc'):
+        ls.show_message('top level flow.cylc file')
+        validate = True
+    else:
+        ls.show_message('NOT a top level flow.cylc file')
+        validate = False
+    return [
+        CodeAction(
+            title="cylcValidate",
+            disabled=CodeActionDisabledType('This action disabled because ...') if not validate else None,
+            command=Command(
+                title="cylcValidate",
+                command="_validate",
+                args=[ls, params]
+            ),
+        ),
+        CodeAction(
+            title="cylc lint",
+            command=Command(
+                title="cylcLint",
+                command="_validate",
+                args=[ls, params]
+            ),
+        )
+    ]
+
 
 
 @cylc_ls.command(CylcLanguageServer.CMD_REGISTER_COMPLETIONS)
