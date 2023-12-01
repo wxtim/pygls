@@ -20,12 +20,17 @@
 
 import * as net from "net";
 import * as path from "path";
+import * as child_process from "child_process"
 import { ExtensionContext, ExtensionMode, workspace } from "vscode";
 import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions,
+    CodeAction,
 } from "vscode-languageclient/node";
+import * as vscode from "vscode";
+import { ChildProcess, exec } from "child_process";
+
 
 let client: LanguageClient;
 
@@ -41,7 +46,7 @@ function getClientOptions(): LanguageClientOptions {
         synchronize: {
             // Notify the server about file changes to '.clientrc files contain in the workspace
             fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
-        },
+        }
     };
 }
 
@@ -96,6 +101,29 @@ export function activate(context: ExtensionContext): void {
 
         client = startLangServer(pythonPath, ["-m", "server"], cwd);
     }
+
+    const command = 'cylc vip';
+
+    const commandHandler = (name: string = 'world') => {
+    //   child_process.exec("cylc vip");
+    //   child_process.exec('cylc vip', (error, stdout, stderr) => {
+    //     if (error) {
+    //       console.error(`error: ${error.message}`);
+    //       return;
+    //     }
+
+    //     if (stderr) {
+    //       console.error(`stderr: ${stderr}`);
+    //       return;
+    //     }
+
+    //     console.log(`stdout:\n${stdout}`);
+    //   });
+      const child = child_process.spawn("bash", ["cylc", "vip", "simplest"]);
+      debugger
+    };
+
+    context.subscriptions.push(vscode.commands.registerCommand(command, commandHandler));
 
     context.subscriptions.push(client.start());
 }

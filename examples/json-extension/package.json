@@ -26,12 +26,8 @@
         "title": "Unregister completions"
       },
       {
-        "command": "cylcValidate",
-        "title": "cylc validate"
-      },
-      {
-        "command": "cylcLint",
-        "title": "cylc lint"
+        "command": "cylc vip",
+        "title": "cylc vip"
       }
     ],
     "configuration": {

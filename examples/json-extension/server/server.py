@@ -41,7 +41,7 @@ class CylcLanguageServer(LanguageServer):
 cylc_ls = CylcLanguageServer('Cylc Language Server', 'v0.1')
 
 
-async def _validate(ls, params):
+async def _validate(ls, params, lint_only=False):
     """Run Cylc lint & Cylc validate
 
     n.b: Cylc Validate will only return on issue at a time.
@@ -58,7 +58,8 @@ async def _validate(ls, params):
     diagnostics = [Diagnostic(**d) for d in diagnostics]
 
     # Add Cylc Validate diagnostics:
-    diagnostics += await _validate_cylc(text_doc.uri)
+    if not lint_only:
+        diagnostics += await _validate_cylc(text_doc.uri)
 
     ls.publish_diagnostics(text_doc.uri, diagnostics)
 
@@ -108,29 +109,27 @@ def completions(params: Optional[CompletionParams] = None) -> CompletionList:
     )
 
 
-# @cylc_ls.feature(TEXT_DOCUMENT_DID_CHANGE)
-# async def did_change(ls, params: DidChangeTextDocumentParams):
-#     """Text document did change notification."""
-#     await _validate(ls, params)
+@cylc_ls.feature(TEXT_DOCUMENT_DID_CHANGE)
+async def did_change(ls, params: DidChangeTextDocumentParams):
+    """Text document did change notification."""
+    await _validate(ls, params)
 
 
-# @cylc_ls.feature(TEXT_DOCUMENT_DID_CLOSE)
-# def did_close(server: CylcLanguageServer, params: DidCloseTextDocumentParams):
-#     """Text document did close notification."""
-#     server.show_message('Closed Cylc Config')
+@cylc_ls.feature(TEXT_DOCUMENT_DID_CLOSE)
+def did_close(server: CylcLanguageServer, params: DidCloseTextDocumentParams):
+    """Text document did close notification."""
+    server.show_message('Closed Cylc Config')
 
 
-# @cylc_ls.feature(TEXT_DOCUMENT_DID_OPEN)
-# async def did_open(ls, params: DidOpenTextDocumentParams):
-#     """Text document did open notification."""
-#     ls.show_message(
-#         'Opened a Cylc Config\n'
-#         '[https://cylc.github.io/cylc-doc/stable/html/'
-#         'reference/config/workflow.html]'
-#     )
-#     await _validate(ls, params)
-
-# @cylc_ls.feature(TEXT_DOCUMENT_DID_CHANGE)
+@cylc_ls.feature(TEXT_DOCUMENT_DID_OPEN)
+async def did_open(ls, params: DidOpenTextDocumentParams):
+    """Text document did open notification."""
+    ls.show_message(
+        'Opened a Cylc Config\n'
+        '[https://cylc.github.io/cylc-doc/stable/html/'
+        'reference/config/workflow.html]'
+    )
+    await _validate(ls, params)
 
 
 from lsprotocol.types import (
@@ -145,15 +144,16 @@ from lsprotocol.types import (
     Position,
     Range,
     TextDocumentIdentifier,
+    WorkspaceEdit,
+    TextDocumentEdit,
 )
 
 
 @cylc_ls.feature(
     TEXT_DOCUMENT_CODE_ACTION,
-    CodeActionOptions()
+    # CodeActionOptions()
 )
 def my_action(ls, params: CodeActionParams):
-    breakpoint()
     if params.text_document.uri.endswith('flow.cylc'):
         ls.show_message('top level flow.cylc file')
         validate = True
@@ -162,20 +162,34 @@ def my_action(ls, params: CodeActionParams):
         validate = False
     return [
         CodeAction(
-            title="cylcValidate",
-            disabled=CodeActionDisabledType('This action disabled because ...') if not validate else None,
+            title="cylc validate",
+            disabled=(
+                CodeActionDisabledType(
+                    'This action disabled because ...')
+                if not validate else None
+            ),
             command=Command(
-                title="cylcValidate",
-                command="_validate",
-                args=[ls, params]
+                title="cylc validate",
+                command="Validate",
             ),
         ),
         CodeAction(
             title="cylc lint",
             command=Command(
-                title="cylcLint",
-                command="_validate",
-                args=[ls, params]
+                title="cylc lint",
+                command="cylc lint",
+            ),
+        ),
+        CodeAction(
+            title="cylc vip",
+            disabled=(
+                CodeActionDisabledType(
+                    'This action disabled because ...')
+                if not validate else None
+            ),
+            command=Command(
+                title="cylc vip",
+                command="cylc vip",
             ),
         )
     ]
